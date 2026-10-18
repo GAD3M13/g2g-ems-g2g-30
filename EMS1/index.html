@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>وزارة الصحة - G2G EMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- مكتبة Supabase الرسمية -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* إخفاء أي أشرطة إعلانية أو ترويجية */
+    #netlify-badge, netlify-drawer, [class*="netlify-drawer"], [id*="netlify-drawer"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { 
+      font-family: 'Tajawal', sans-serif; 
+      background-color: #030508; 
+      color: #f1f5f9; 
+      height: 100vh; 
+      overflow: hidden; 
+      margin: 0;
+      padding: 0;
+    }
+    .glass-card { 
+      background: rgba(12, 17, 26, 0.65); 
+      backdrop-filter: blur(28px); 
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.08); 
+      box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.06); 
+      transition: all 0.3s ease;
+    }
+    .glass-input { 
+      background: rgba(18, 25, 40, 0.55); 
+      border: 1px solid rgba(255, 255, 255, 0.1); 
+      color: white; 
+      backdrop-filter: blur(14px); 
+    }
+    .glass-input:focus { 
+      border-color: #ef4444; 
+      outline: none; 
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.35), inset 0 0 10px rgba(239, 68, 68, 0.1); 
+    }
+    .glow-rgb-red { box-shadow: 0 0 45px rgba(239, 68, 68, 0.12), inset 0 0 15px rgba(239, 68, 68, 0.04); }
+    .glow-rgb-blue { box-shadow: 0 0 45px rgba(59, 130, 246, 0.12), inset 0 0 15px rgba(59, 130, 246, 0.04); }
+    
+    .rank-badge {
+      padding: 4px 14px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      display: inline-block;
+      text-align: center;
+    }
+    
+    .rank-minister { background-color: #ffffff; color: #000000; box-shadow: 0 0 15px rgba(255,255,255,0.8); }
+    .rank-deputyminister { background-color: #f59e0b; color: #000000; box-shadow: 0 0 12px rgba(245, 158, 11, 0.7); }
+    .rank-deputy1 { background-color: #111827; color: #ffffff; border: 2px solid #4b5563; box-shadow: 0 0 12px rgba(255,255,255,0.2); }
+    .rank-deputy2 { background-color: #ef4444; color: #ffffff; box-shadow: 0 0 12px rgba(239, 68, 68, 0.7); }
+    .rank-hospitaldir { background-color: #3b82f6; color: #ffffff; box-shadow: 0 0 12px rgba(59, 130, 246, 0.7); }
+    .rank-healthaffairs { background-color: #06b6d4; color: #ffffff; box-shadow: 0 0 12px rgba(6, 182, 212, 0.7); }
+    .rank-professor { background-color: #ec4899; color: #ffffff; box-shadow: 0 0 12px rgba(236, 72, 153, 0.7); }
+    .rank-surgeon { background-color: #10b981; color: #ffffff; box-shadow: 0 0 12px rgba(16, 185, 129, 0.7); }
+    .rank-doctor { background-color: #6366f1; color: #ffffff; box-shadow: 0 0 12px rgba(99, 102, 241, 0.7); }
+    .rank-paramedic { background-color: #10b981; color: #ffffff; box-shadow: 0 0 12px rgba(16, 185, 129, 0.7); }
+    .rank-trainee { background-color: #6b7280; color: #ffffff; box-shadow: 0 0 12px rgba(107, 114, 128, 0.7); }
+
+    /* خيارات المناصب الشفافة المتناسقة */
+    select#newPosition option[value="لم يتم التكليف"] { background: rgba(107, 114, 128, 0.4); color: #ffffff; }
+    select#newPosition option[value="الإدارة العليا"] { background: rgba(17, 24, 39, 0.6); color: #ffffff; }
+    select#newPosition option[value="جدعم"] { background: rgba(0, 0, 0, 0.6); color: #ffffff; }
+    select#newPosition option[value="قائد عمليات"] { background: rgba(239, 68, 68, 0.4); color: #ffffff; }
+    select#newPosition option[value="مسؤول عمليات"] { background: rgba(59, 130, 246, 0.4); color: #ffffff; }
+    select#newPosition option[value="عمليات"] { background: rgba(6, 182, 212, 0.4); color: #ffffff; }
+    select#newPosition option[value="مسؤول التدريب"] { background: rgba(168, 85, 247, 0.4); color: #ffffff; }
+    select#newPosition option[value="دكتور"] { background: rgba(99, 102, 241, 0.4); color: #ffffff; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(3, 5, 8, 0.4); }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(239, 68, 68, 0.5); }
+  </style>
+</head>
+<body class="flex flex-col justify-between p-3 md:p-5 selection:bg-red-500 selection:text-white">
+
+  <div class="max-w-7xl mx-auto w-full h-full flex flex-col justify-between space-y-3">
+
+    <!-- VIEW 1 -->
+    <div id="viewStart" class="h-full flex flex-col items-center justify-center text-center space-y-6 my-auto">
+      <div class="relative">
+        <div class="absolute -inset-4 rounded-full bg-gradient-to-r from-red-600/30 via-purple-600/20 to-blue-600/30 blur-3xl opacity-75 animate-pulse"></div>
+        <div class="relative bg-slate-900/80 border border-slate-800/80 p-6 rounded-3xl shadow-2xl backdrop-blur-2xl">
+          <i class="fa-solid fa-hospital w-16 h-16 text-red-500 text-5xl flex items-center justify-center"></i>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <h1 class="text-3xl md:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-blue-500 drop-shadow-md">
+          وزارة الصحة - مدينة G2G
+        </h1>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl">
+        <button onclick="switchView('admin')" class="glass-card glow-rgb-red hover:border-red-500/50 p-5 rounded-2xl text-right group flex items-center justify-between cursor-pointer">
+          <div>
+            <span class="text-[11px] text-red-400 font-semibold block mb-1">لوحة الحماية</span>
+            <h3 class="text-base font-bold text-white group-hover:text-red-400 transition">الإدارة / خاص</h3>
+          </div>
+          <div class="bg-red-500/10 p-3 rounded-xl text-red-500 text-lg group-hover:scale-110 transition"><i class="fa-solid fa-shield-halved"></i></div>
+        </button>
+
+        <button onclick="switchView('public')" class="glass-card glow-rgb-blue hover:border-blue-500/50 p-5 rounded-2xl text-right group flex items-center justify-between cursor-pointer">
+          <div>
+            <span class="text-[11px] text-blue-400 font-semibold block mb-1">سجلات عامة</span>
+            <h3 class="text-base font-bold text-blue-400 transition">الجدول / عام</h3>
+          </div>
+          <div class="bg-blue-500/10 p-3 rounded-xl text-blue-500 text-lg group-hover:scale-110 transition"><i class="fa-solid fa-table-list"></i></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: PUBLIC TABLE -->
+    <div id="viewPublic" class="hidden h-full flex flex-col space-y-3 overflow-hidden">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-3 glass-card p-3 rounded-2xl shrink-0">
+        <div class="flex items-center gap-3">
+          <button onclick="switchView('start')" class="bg-slate-800/60 hover:bg-slate-700/80 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold backdrop-blur-md flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-arrow-right"></i> الرئيسية
+          </button>
+          <h2 class="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-blue-500">G2G EMS Roster</h2>
+        </div>
+        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+          <select id="rankFilter" onchange="renderTable()" class="glass-input px-3 py-1.5 rounded-xl text-xs cursor-pointer">
+            <option value="all">جميع الرتب والمناصب</option>
+            <option value="الوزير">الوزير</option>
+            <option value="نائب الوزير">نائب الوزير</option>
+            <option value="النائب الاول">النائب الأول</option>
+            <option value="النائب الثاني">النائب الثاني</option>
+            <option value="مدير المستشفى">مدير المستشفى</option>
+            <option value="مدير شؤون الصحة">مدير شؤون الصحة</option>
+            <option value="بروفيسور">بروفيسور</option>
+            <option value="طبيب جراح">طبيب جراح</option>
+            <option value="طبيب">طبيب</option>
+            <option value="دكتور">دكتور</option>
+            <option value="مسعف">مسعف</option>
+            <option value="مسعف تحت التدريب">مسعف تحت التدريب</option>
+            <option value="الإدارة العليا">الإدارة العليا</option>
+            <option value="جدعم">جدعم</option>
+            <option value="قائد عمليات">قائد عمليات</option>
+            <option value="مسؤول عمليات">مسؤول عمليات</option>
+            <option value="عمليات">عمليات</option>
+            <option value="مسؤول التدريب">مسؤول التدريب</option>
+            <option value="لم يتم التكليف">لم يتم التكليف</option>
+          </select>
+          <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="ابحث بالاسم أو الديسكورد..." class="glass-input px-3 py-1.5 rounded-xl text-xs w-full md:w-56">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
+        <div class="glass-card p-3 rounded-2xl flex items-center justify-between border-l-4 border-l-red-500">
+          <div>
+            <span class="text-slate-400 text-[11px]">العدد الإجمالي للطاقم</span>
+            <h3 class="text-xl font-black text-white mt-0.5" id="totalStaffCount">0</h3>
+          </div>
+          <div class="bg-red-500/10 p-2.5 rounded-xl text-red-500"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <div class="glass-card p-3 rounded-2xl flex items-center justify-between border-l-4 border-l-amber-500">
+          <div>
+            <span class="text-slate-400 text-[11px]">أفضل مسعف هذا الأسبوع</span>
+            <h3 class="text-sm font-bold text-amber-400 mt-0.5" id="displayBestDoctor">جلعوط</h3>
+          </div>
+          <div class="bg-amber-500/10 p-2.5 rounded-xl text-amber-400"><i class="fa-solid fa-award"></i></div>
+        </div>
+        <div class="glass-card p-3 rounded-2xl flex items-center justify-between border-l-4 border-l-blue-500">
+          <div>
+            <span class="text-slate-400 text-[11px]">تاريخ تحديث السيرفر</span>
+            <h3 class="text-sm font-bold text-blue-400 mt-0.5" id="displayUpdateDate">2026/10/17</h3>
+          </div>
+          <div class="bg-blue-500/10 p-2.5 rounded-xl text-blue-400"><i class="fa-solid fa-calendar-days"></i></div>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-2xl overflow-hidden flex-1 flex flex-col shadow-2xl">
+        <div class="overflow-y-auto flex-1">
+          <table class="w-full text-right border-collapse">
+            <thead class="sticky top-0 z-10 bg-slate-950/90 text-slate-400 text-[11px] uppercase border-b border-slate-800 backdrop-blur-md">
+              <tr>
+                <th class="p-3">الكود</th>
+                <th class="p-3">اسم الديسكورد</th>
+                <th class="p-3">الاسم الكامل</th>
+                <th class="p-3 text-center">الرتبة</th>
+                <th class="p-3 text-center">المنصب</th>
+                <th class="p-3 text-center">ساعات هذا الأسبوع</th>
+                <th class="p-3 text-center">المجموع الكلي للساعات</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-800/40 text-xs md:text-sm">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: ADMIN PANEL -->
+    <div id="viewAdmin" class="hidden h-full flex flex-col space-y-3 overflow-hidden">
+      <div class="flex justify-between items-center glass-card p-3 rounded-2xl shrink-0">
+        <button onclick="switchView('start')" class="bg-slate-800/60 hover:bg-slate-700/80 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold backdrop-blur-md cursor-pointer"><i class="fa-solid fa-arrow-right"></i> الرئيسية</button>
+        <h2 class="text-base font-black text-red-500">لوحة تحكم شؤون الصحة (إدارة خاصة)</h2>
+      </div>
+
+      <div id="adminLoginBox" class="glass-card p-8 rounded-2xl max-w-md mx-auto text-center space-y-4 my-auto">
+        <h3 class="text-base font-bold text-white">أدخل رمز الدخول الإداري</h3>
+        <input type="password" id="adminPinInput" placeholder="••••" class="glass-input px-4 py-3 rounded-xl text-center text-xl tracking-widest w-full">
+        <button onclick="verifyAdminPin()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-red-600/30 cursor-pointer">دخول الإدارة</button>
+      </div>
+
+      <div id="adminDashboard" class="hidden flex-1 flex flex-col space-y-3 overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 shrink-0">
+          
+          <div class="glass-card p-3.5 rounded-2xl space-y-2.5">
+            <h3 class="text-xs font-bold text-red-400">إعدادات الجدول العامة</h3>
+            <div class="space-y-2">
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">أفضل مسعف هذا الأسبوع:</label>
+                <input type="text" id="inputBestDoctor" class="glass-input w-full px-3 py-1.5 rounded-xl text-xs">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">تاريخ تحديث السيرفر:</label>
+                <input type="text" id="inputUpdateDate" class="glass-input w-full px-3 py-1.5 rounded-xl text-xs">
+              </div>
+              <button onclick="saveGeneralSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer">حفظ الإعدادات العامة</button>
+            </div>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-2xl space-y-2.5">
+            <h3 class="text-xs font-bold text-red-400">تعيين مسعف / ترقية أو إضافة (تلقائي الترتيب)</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" id="newCode" placeholder="الكود مثل (F-2)" class="glass-input px-3 py-1.5 rounded-xl text-xs">
+              <input type="text" id="newName" placeholder="الاسم الكامل" class="glass-input px-3 py-1.5 rounded-xl text-xs">
+              <input type="text" id="newDiscord" placeholder="اسم الديسكورد" class="glass-input px-3 py-1.5 rounded-xl text-xs">
+              
+              <select id="newRank" class="glass-input px-3 py-1.5 rounded-xl text-xs cursor-pointer">
+                <option value="الوزير">الوزير</option>
+                <option value="نائب الوزير">نائب الوزير</option>
+                <option value="النائب الاول">النائب الأول</option>
+                <option value="النائب الثاني">النائب الثاني</option>
+                <option value="مدير المستشفى">مدير المستشفى</option>
+                <option value="مدير شؤون الصحة">مدير شؤون الصحة</option>
+                <option value="بروفيسور">بروفيسور</option>
+                <option value="طبيب جراح">طبيب جراح</option>
+                <option value="طبيب">طبيب</option>
+                <option value="دكتور">دكتور</option>
+                <option value="مسعف">مسعف</option>
+                <option value="مسعف تحت التدريب">مسعف تحت التدريب</option>
+              </select>
+
+              <select id="newPosition" class="glass-input px-3 py-1.5 rounded-xl text-xs cursor-pointer">
+                <option value="لم يتم التكليف">لم يتم التكليف</option>
+                <option value="الإدارة العليا">الإدارة العليا</option>
+                <option value="جدعم">جدعم</option>
+                <option value="قائد عمليات">قائد عمليات</option>
+                <option value="مسؤول عمليات">مسؤول عمليات</option>
+                <option value="عمليات">عمليات</option>
+                <option value="مسؤول التدريب">مسؤول التدريب</option>
+                <option value="دكتور">دكتور</option>
+              </select>
+
+              <input type="text" id="newPromoDate" placeholder="تاريخ الترقية (مثل 2026/10/17)" class="glass-input px-3 py-1.5 rounded-xl text-xs">
+              <input type="number" id="newWeekHours" placeholder="ساعات الأسبوع" class="glass-input px-3 py-1.5 rounded-xl text-xs">
+              <input type="number" id="newTotalHours" placeholder="الساعات الكلية" class="glass-input px-3 py-1.5 rounded-xl text-xs">
+            </div>
+            <button onclick="addMember()" class="w-full bg-red-600 hover:bg-red-700 text-white py-1.5 rounded-xl text-xs font-bold cursor-pointer">حفظ وإضافة العضو في مكانه</button>
+          </div>
+
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden flex-1 flex flex-col shadow-2xl">
+          <div class="p-2.5 bg-slate-950/60 border-b border-slate-800/80 shrink-0 flex justify-between items-center">
+            <h3 class="text-xs font-bold text-slate-200">إدارة وحذف وتعديل أعضاء الطاقم الطبي</h3>
+            <span class="text-[10px] text-slate-400">إجمالي السجلات: <span id="adminStaffCount">0</span></span>
+          </div>
+          <div class="overflow-y-auto flex-1">
+            <table class="w-full text-right text-xs">
+              <thead class="sticky top-0 z-10 bg-slate-950/95 text-slate-400 border-b border-slate-800 backdrop-blur-md">
+                <tr>
+                  <th class="p-3">الكود</th>
+                  <th class="p-3">الاسم</th>
+                  <th class="p-3">الرتبة</th>
+                  <th class="p-3">المنصب</th>
+                  <th class="p-3">إجراءات التحكم</th>
+                </tr>
+              </thead>
+              <tbody id="adminTableBody" class="divide-y divide-slate-800/40">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="text-center text-[11px] text-slate-500 py-1.5 shrink-0 border-t border-slate-900/50">
+    نظام وزارة الصحة - مدينة G2G © 2026 | تم التطوير بواسطة جدعم
+  </footer>
+
+  <script>
+    const SUPABASE_URL = 'https://xatmjlizlvulpjvphxq.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhdG1qbGlsemx2dWxwanZwaHhxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjI2NjUwNywiZXhwIjoyMTA3ODQyNTA3fQ.m-eocyuOKq19vO_t2gpJIbq2762TKjLvBB9TVFk1yQs';
+    
+    let _supabase = null;
+    try {
+      if (typeof supabase !== 'undefined' && supabase.createClient) {
+        _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.warn("تعذر الاتصال المباشر بمكتبة Supabase:", e);
+    }
+
+    let bestDoctorName = "جلعوط";
+    let updateDateValue = "2026/10/17";
+    
+    let defaultStaff = [
+      { code: "A-1", discord: "7ameed", name: "حميد", rank: "الوزير", position: "لم يتم التكليف", weekHours: "100", totalHours: "10000" },
+      { code: "P-1", discord: "GAD3M", name: "GAD3M", rank: "النائب الاول", position: "لم يتم التكليف", weekHours: "100", totalHours: "5000" },
+      { code: "P-2", discord: "ZA7LOK", name: "ZA7LOK", rank: "النائب الثاني", position: "لم يتم التكليف", weekHours: "100", totalHours: "5000" },
+      { code: "E-1", discord: "M I L A D O O G 2 G", name: "M I L A D O O", rank: "مدير المستشفى", position: "لم يتم التكليف", weekHours: "100", totalHours: "1000" },
+      { code: "C-1", discord: "MUSTAFA", name: "MUSTAFA", rank: "مدير شؤون الصحة", position: "لم يتم التكليف", weekHours: "54", totalHours: "81" },
+      { code: "C-2", discord: "Fady", name: "دلفينوس", rank: "مدير شؤون الصحة", position: "لم يتم التكليف", weekHours: "61", totalHours: "70" },
+      { code: "F-1", discord: "Marcus", name: "Ahmed", rank: "بروفيسور", position: "لم يتم التكليف", weekHours: "70", totalHours: "140" },
+      { code: "F-2", discord: "SNOW . LADY", name: "SNOW", rank: "بروفيسور", position: "لم يتم التكليف", weekHours: "51", totalHours: "270" },
+      { code: "F-3", discord: "Mortada", name: "Mortada", rank: "بروفيسور", position: "لم يتم التكليف", weekHours: "47", totalHours: "515" },
+      { code: "D-1", discord: "Jalout", name: "Jalout", rank: "طبيب", position: "لم يتم التكليف", weekHours: "38", totalHours: "94" },
+      { code: "D-2", discord: "Shero", name: "Shero", rank: "طبيب", position: "لم يتم التكليف", weekHours: "40", totalHours: "67" },
+      { code: "D-3", discord: "ابو الهمم", name: "ابو الهمم", rank: "طبيب", position: "لم يتم التكليف", weekHours: "30", totalHours: "59" },
+      { code: "R-1", discord: "KAITO", name: "حسن", rank: "مسعف", position: "لم يتم التكليف", weekHours: "50", totalHours: "50" },
+      { code: "R-2", discord: "ALTMIMI", name: "ALTMIMI", rank: "مسعف", position: "لم يتم التكليف", weekHours: "17", totalHours: "67" },
+      { code: "R-3", discord: "Sky ⚡", name: "Sky", rank: "مسعف", position: "لم يتم التكليف", weekHours: "19", totalHours: "69" },
+      { code: "G-1", discord: "الحاكم", name: "الحاكم", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" },
+      { code: "G-2", discord: "التكريتي", name: "التكريتي", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" },
+      { code: "G-3", discord: "Mario", name: "Mario", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" },
+      { code: "G-4", discord: "ABU YOUSSEF (G2G)", name: "ABU YOUSSEF", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" },
+      { code: "G-5", discord: "JADO", name: "JADO", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" },
+      { code: "G-6", discord: "اسيف التميمي", name: "اسيف التميمي", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" },
+      { code: "G-7", discord: "ALI N", name: "ALI N", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" },
+      { code: "G-8", discord: "Lux", name: "Lux", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" },
+      { code: "G-9", discord: "l AZOOZ l", name: "شحذيب", rank: "مسعف تحت التدريب", position: "لم يتم التكليف", weekHours: "0", totalHours: "0" }
+    ];
+
+    let staffData = defaultStaff;
+
+    async function fetchFromSupabase() {
+      if (!_supabase) {
+        renderTable();
+        renderAdminTable();
+        return;
+      }
+      try {
+        let { data: settings } = await _supabase.from('settings').select('*');
+        if (settings && settings.length > 0) {
+          bestDoctorName = settings.find(s => s.key === 'best_doctor')?.value || "جلعوط";
+          updateDateValue = settings.find(s => s.key === 'update_date')?.value || "2026/10/17";
+        }
+
+        let { data: staff } = await _supabase.from('staff').select('*');
+        if (staff && staff.length > 0) {
+          staffData = staff;
+        }
+      } catch (err) {
+        console.error("خطأ الاتصال بالسيرفر:", err);
+      }
+      renderTable();
+      renderAdminTable();
+    }
+
+    fetchFromSupabase();
+
+    const rankPriority = {
+      "الوزير": 1,
+      "نائب الوزير": 2,
+      "النائب الاول": 3,
+      "النائب الثاني": 4,
+      "مدير المستشفى": 5,
+      "مدير شؤون الصحة": 6,
+      "بروفيسور": 7,
+      "طبيب جراح": 8,
+      "طبيب": 9,
+      "دكتور": 10,
+      "مسعف": 11,
+      "مسعف تحت التدريب": 12,
+      "الإدارة العليا": 13,
+      "جدعم": 14,
+      "قائد عمليات": 15,
+      "مسؤول عمليات": 16,
+      "عمليات": 17,
+      "مسؤول التدريب": 18,
+      "لم يتم التكليف": 19
+    };
+
+    function sortStaff() {
+      staffData.sort((a, b) => {
+        let pA = rankPriority[a.rank] || 99;
+        let pB = rankPriority[b.rank] || 99;
+        if (pA !== pB) return pA - pB;
+        
+        let prefixA = (a.code || "").split('-')[0].toUpperCase();
+        let prefixB = (b.code || "").split('-')[0].toUpperCase();
+        if (prefixA !== prefixB) return prefixA.localeCompare(prefixB);
+
+        let numA = parseInt((a.code || "").split('-')[1]) || 0;
+        let numB = parseInt((b.code || "").split('-')[1]) || 0;
+        return numA - numB;
+      });
+    }
+
+    function switchView(view) {
+      document.getElementById('viewStart').classList.add('hidden');
+      document.getElementById('viewPublic').classList.add('hidden');
+      document.getElementById('viewAdmin').classList.add('hidden');
+
+      if (view === 'start') {
+        document.getElementById('viewStart').classList.remove('hidden');
+      } else if (view === 'public') {
+        document.getElementById('viewPublic').classList.remove('hidden');
+        renderTable();
+        fetchFromSupabase();
+      } else if (view === 'admin') {
+        document.getElementById('viewAdmin').classList.remove('hidden');
+      }
+    }
+
+    function verifyAdminPin() {
+      const pin = document.getElementById('adminPinInput').value;
+      if (pin === "2004") {
+        document.getElementById('adminLoginBox').classList.add('hidden');
+        document.getElementById('adminDashboard').classList.remove('hidden');
+        document.getElementById('inputBestDoctor').value = bestDoctorName;
+        document.getElementById('inputUpdateDate').value = updateDateValue;
+        renderAdminTable();
+      } else {
+        alert("رمز الدخول غير صحيح!");
+      }
+    }
+
+    async function saveGeneralSettings() {
+      bestDoctorName = document.getElementById('inputBestDoctor').value;
+      updateDateValue = document.getElementById('inputUpdateDate').value;
+      
+      if (_supabase) {
+        await _supabase.from('settings').upsert([
+          { key: 'best_doctor', value: bestDoctorName },
+          { key: 'update_date', value: updateDateValue }
+        ], { onConflict: 'key' });
+      }
+
+      alert("تم حفظ وتحديث الإعدادات العامة للجميع بنجاح!");
+      renderTable();
+    }
+
+    function getRankBadgeClass(val) {
+      switch(val) {
+        case 'الوزير': return 'rank-minister';
+        case 'نائب الوزير': return 'rank-deputyminister';
+        case 'النائب الاول': return 'rank-deputy1';
+        case 'النائب الثاني': return 'rank-deputy2';
+        case 'مدير المستشفى': return 'rank-hospitaldir';
+        case 'مدير شؤون الصحة': return 'rank-healthaffairs';
+        case 'بروفيسور': return 'rank-professor';
+        case 'طبيب جراح': return 'rank-surgeon';
+        case 'طبيب': return 'rank-doctor';
+        case 'دكتور': return 'rank-doctor';
+        case 'مسعف': return 'rank-paramedic';
+        case 'مسعف تحت التدريب': return 'rank-trainee';
+        case 'الإدارة العليا': return 'rank-deputy1';
+        case 'جدعم': return 'rank-minister';
+        case 'قائد عمليات': return 'rank-deputy2';
+        case 'مسؤول عمليات': return 'rank-hospitaldir';
+        case 'عمليات': return 'rank-healthaffairs';
+        case 'مسؤول التدريب': return 'rank-professor';
+        default: return 'text-slate-500';
+      }
+    }
+
+    function renderTable() {
+      sortStaff();
+      const tbody = document.getElementById('tableBody');
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      
+      const search = (document.getElementById('searchInput')?.value || "").toLowerCase();
+      const rankFilter = document.getElementById('rankFilter')?.value || "all";
+
+      if(document.getElementById('displayBestDoctor')) document.getElementById('displayBestDoctor').innerText = bestDoctorName;
+      if(document.getElementById('displayUpdateDate')) document.getElementById('displayUpdateDate').innerText = updateDateValue;
+
+      let filtered = staffData.filter(item => {
+        let matchesSearch = item.name.toLowerCase().includes(search) || item.discord.toLowerCase().includes(search) || item.code.toLowerCase().includes(search);
+        let matchesRank = rankFilter === 'all' || item.rank === rankFilter || item.position === rankFilter;
+        return matchesSearch && matchesRank;
+      });
+
+      if(document.getElementById('totalStaffCount')) document.getElementById('totalStaffCount').innerText = staffData.length;
+
+      filtered.forEach(staff => {
+        let rankBadge = `<span class="rank-badge ${getRankBadgeClass(staff.rank)}">${staff.rank}</span>`;
+        let posVal = staff.position && staff.position.trim() !== '' ? staff.position : 'لم يتم التكليف';
+        let posBadge = posVal === 'لم يتم التكليف' ? `<span class="text-slate-500 text-xs">لم يتم التكليف</span>` : `<span class="rank-badge ${getRankBadgeClass(posVal)}">${posVal}</span>`;
+
+        let tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/30 transition-all";
+        tr.innerHTML = `
+          <td class="p-3 font-mono font-black text-white text-sm">${staff.code}</td>
+          <td class="p-3 flex items-center gap-2 text-slate-300">
+            <i class="fa-brands fa-discord text-indigo-400"></i>
+            <span>${staff.discord}</span>
+          </td>
+          <td class="p-3 font-semibold text-white">${staff.name}</td>
+          <td class="p-3 text-center">${rankBadge}</td>
+          <td class="p-3 text-center">${posBadge}</td>
+          <td class="p-3 text-center font-mono text-cyan-400 font-bold">${staff.weekHours}</td>
+          <td class="p-3 text-center font-mono text-emerald-400 font-bold">${staff.totalHours}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderAdminTable() {
+      sortStaff();
+      const tbody = document.getElementById('adminTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      if (document.getElementById('adminStaffCount')) document.getElementById('adminStaffCount').innerText = staffData.length;
+
+      staffData.forEach((staff) => {
+        let posDisplay = staff.position && staff.position.trim() !== '' ? staff.position : 'لم يتم التكليف';
+        let tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40 transition-all";
+        tr.innerHTML = `
+          <td class="p-3 font-mono font-bold text-white">${staff.code}</td>
+          <td class="p-3 text-white font-medium">${staff.name} <span class="text-slate-400 text-[10px]">(${staff.discord})</span></td>
+          <td class="p-3 text-slate-300">${staff.rank}</td>
+          <td class="p-3 text-slate-300">${posDisplay}</td>
+          <td class="p-3">
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="window.editStaffMember('${staff.code}')" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition">تعديل</button>
+              <button type="button" onclick="window.deleteStaffMember('${staff.code}')" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition">حذف</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.deleteStaffMember = async function(code) {
+      if (confirm(`هل أنت متأكد من حذف العضو برمز (${code}) نهائياً من السيرفر؟`)) {
+        if (_supabase) {
+          await _supabase.from('staff').delete().eq('code', code);
+        }
+        staffData = staffData.filter(s => s.code !== code);
+        renderAdminTable();
+        renderTable();
+      }
+    };
+
+    window.editStaffMember = function(code) {
+      let staff = staffData.find(s => s.code === code);
+      if(!staff) return;
+      document.getElementById('newCode').value = staff.code;
+      document.getElementById('newName').value = staff.name;
+      document.getElementById('newDiscord').value = staff.discord;
+      document.getElementById('newRank').value = staff.rank;
+      document.getElementById('newPosition').value = staff.position || "لم يتم التكليف";
+      document.getElementById('newWeekHours').value = staff.weekHours;
+      document.getElementById('newTotalHours').value = staff.totalHours;
+    };
+
+    async function addMember() {
+      let code = document.getElementById('newCode').value.trim();
+      let name = document.getElementById('newName').value.trim();
+      let discord = document.getElementById('newDiscord').value.trim() || "-";
+      let rank = document.getElementById('newRank').value;
+      let position = document.getElementById('newPosition').value;
+      let weekHours = document.getElementById('newWeekHours').value.trim() || "0";
+      let totalHours = document.getElementById('newTotalHours').value.trim() || "0";
+
+      if(!code || !name) {
+        alert("يرجى ملء الكود والاسم على الأقل!");
+        return;
+      }
+
+      let newObj = { code, discord, name, rank, position, weekHours, totalHours };
+
+      if (_supabase) {
+        let { error } = await _supabase.from('staff').upsert([newObj], { onConflict: 'code' });
+        if (error) {
+          alert("حدث خطأ في قاعدة البيانات: " + error.message);
+          return;
+        }
+      }
+
+      alert("تم الحفظ والتحديث للجميع بنجاح!");
+
+      document.getElementById('newCode').value = "";
+      document.getElementById('newName').value = "";
+      document.getElementById('newDiscord').value = "";
+      document.getElementById('newPosition').value = "لم يتم التكليف";
+      document.getElementById('newWeekHours').value = "";
+      document.getElementById('newTotalHours').value = "";
+      
+      await fetchFromSupabase();
+    }
+  </script>
+</body>
+</html>
